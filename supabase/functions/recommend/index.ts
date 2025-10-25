@@ -25,7 +25,6 @@ interface SpotStatus {
 interface RecommendationRequest {
   duration?: number
   groupSize?: number
-  noise?: 'Quiet' | 'Medium' | 'Loud' | null
   lat: number
   lng: number
 }
@@ -80,29 +79,11 @@ function scoreSpot(
     warnings.push('Occupancy unknown - using neutral estimate')
   }
 
-  // Distance score (30% weight)
+  // Distance score (50% weight - increased from 30%)
   const distance = calculateDistance(userPrefs.lat, userPrefs.lng, spot.lat, spot.lng)
   const distanceMatch = Math.max(0, 1 - Math.min(distance / 1500, 1))
 
-  // Noise score (20% weight)
-  let noiseMatch = 0.5
-  if (status && status.noise_level && userPrefs.noise) {
-    if (status.noise_level === userPrefs.noise) {
-      noiseMatch = 1
-      matchReason = `Perfect match: ${status.noise_level.toLowerCase()} environment`
-    } else if (status.noise_level === 'Medium') {
-      noiseMatch = 0.6
-      matchReason = `Moderate noise level`
-    } else {
-      noiseMatch = 0.3
-      matchReason = `${status.noise_level} environment (you prefer ${userPrefs.noise})`
-    }
-  } else if (!status || !status.noise_level) {
-    warnings.push('Noise level unknown')
-    matchReason = 'Estimated based on location and availability'
-  }
-
-  const totalScore = (0.5 * availability) + (0.3 * distanceMatch) + (0.2 * noiseMatch)
+  const totalScore = (0.5 * availability) + (0.5 * distanceMatch)
 
   if (!matchReason) {
     if (distance < 300) {

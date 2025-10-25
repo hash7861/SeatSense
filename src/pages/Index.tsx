@@ -16,7 +16,6 @@ interface Message {
 interface Preferences {
   duration: number;
   groupSize: number;
-  noise: 'Quiet' | 'Medium' | 'Loud' | null;
   useLocation: boolean;
   whiteboard: boolean;
 }
@@ -47,7 +46,7 @@ const Index = () => {
     setIsLoading(true);
 
     // Add user message
-    const prefsText = `Duration: ${prefs.duration} min\nGroup Size: ${prefs.groupSize}\nNoise: ${prefs.noise || 'Any'}\nWhiteboard: ${prefs.whiteboard ? 'Yes' : 'No'}\nUse my location`;
+    const prefsText = `Duration: ${prefs.duration} min\nGroup Size: ${prefs.groupSize}\nWhiteboard: ${prefs.whiteboard ? 'Yes' : 'No'}\nUse my location`;
     setMessages((prev) => [
       ...prev,
       { text: prefsText, isUser: true },
@@ -75,7 +74,6 @@ const Index = () => {
           body: {
             duration: prefs.duration,
             groupSize: prefs.groupSize,
-            noise: prefs.noise,
             lat: location.lat,
             lng: location.lng,
           },

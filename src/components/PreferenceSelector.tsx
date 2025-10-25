@@ -1,13 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, Volume2, Clock, Presentation } from "lucide-react";
+import { MapPin, Users, Clock, Presentation } from "lucide-react";
 import { useState } from "react";
 
 interface Preferences {
   duration: number;
   groupSize: number;
-  noise: 'Quiet' | 'Medium' | 'Loud' | null;
   useLocation: boolean;
   whiteboard: boolean;
 }
@@ -19,14 +18,12 @@ interface PreferenceSelectorProps {
 export const PreferenceSelector = ({ onSubmit }: PreferenceSelectorProps) => {
   const [duration, setDuration] = useState(120);
   const [groupSize, setGroupSize] = useState(1);
-  const [noise, setNoise] = useState<'Quiet' | 'Medium' | 'Loud' | null>(null);
   const [whiteboard, setWhiteboard] = useState(false);
 
   const handleSubmit = () => {
     onSubmit({
       duration,
       groupSize,
-      noise,
       useLocation: true,
       whiteboard,
     });
@@ -62,25 +59,6 @@ export const PreferenceSelector = ({ onSubmit }: PreferenceSelectorProps) => {
           step={1}
           className="w-full"
         />
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium mb-2">
-          <Volume2 className="w-4 h-4 text-primary" />
-          <span>Noise Preference (Optional)</span>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {(['Quiet', 'Medium', 'Loud'] as const).map((level) => (
-            <Badge
-              key={level}
-              variant={noise === level ? "default" : "outline"}
-              className="cursor-pointer px-4 py-2 transition-all"
-              onClick={() => setNoise(noise === level ? null : level)}
-            >
-              {level}
-            </Badge>
-          ))}
-        </div>
       </div>
 
       <div className="space-y-2">
