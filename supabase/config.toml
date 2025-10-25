@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.submit-status]
 verify_jwt = false
+
+[functions.estimate-occupancy]
+verify_jwt = false

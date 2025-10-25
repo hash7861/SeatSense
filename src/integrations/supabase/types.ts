@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      class_schedules: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          occupancy_level: string
+          spot_id: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          occupancy_level: string
+          spot_id: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          occupancy_level?: string
+          spot_id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_schedules_spot_id_fkey"
+            columns: ["spot_id"]
+            isOneToOne: false
+            referencedRelation: "study_spots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spot_status: {
         Row: {
           id: string
