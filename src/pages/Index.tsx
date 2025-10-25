@@ -18,6 +18,8 @@ interface Preferences {
   groupSize: number;
   useLocation: boolean;
   whiteboard: boolean;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 const Index = () => {
@@ -46,7 +48,8 @@ const Index = () => {
     setIsLoading(true);
 
     // Add user message
-    const prefsText = `Duration: ${prefs.duration} min\nGroup Size: ${prefs.groupSize}\nWhiteboard: ${prefs.whiteboard ? 'Yes' : 'No'}\nUse my location`;
+    const locationText = prefs.useLocation ? 'Use my location' : 'Location not available';
+    const prefsText = `Duration: ${prefs.duration} min\nGroup Size: ${prefs.groupSize}\nWhiteboard: ${prefs.whiteboard ? 'Yes' : 'No'}\n${locationText}`;
     setMessages((prev) => [
       ...prev,
       { text: prefsText, isUser: true },
@@ -54,45 +57,33 @@ const Index = () => {
     ]);
 
     try {
-      // Get user location
-      if ('geolocation' in navigator) {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-          });
-        });
-        
-        const location = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
+      // Use location from PreferenceSelector if available
+      if (prefs.lat != null && prefs.lng != null) {
+        const location = { lat: prefs.lat, lng: prefs.lng };
         setUserLocation(location);
-
-        // Get recommendations
-        const req: Prefs = {
-          duration: prefs.duration,
-          groupSize: prefs.groupSize,
-          lat: location.lat,
-          lng: location.lng,
-        };
-        const results = await getRecommendations(req, 5);
-        setRecommendations(results);
-        setMessages((prev) => [
-          ...prev.slice(0, -1),
-          { text: `Found ${results.length} great spots near you!`, isUser: false },
-        ]);
-      } else {
-        throw new Error('Geolocation not supported');
       }
+
+      // Get recommendations
+      const req: Prefs = {
+        duration: prefs.duration,
+        groupSize: prefs.groupSize,
+        lat: prefs.lat ?? undefined,
+        lng: prefs.lng ?? undefined,
+      };
+      const results = await getRecommendations(req, 5);
+      setRecommendations(results);
+      setMessages((prev) => [
+        ...prev.slice(0, -1),
+        { text: `Found ${results.length} great spots near you!`, isUser: false },
+      ]);
     } catch (error) {
       console.error('Error getting recommendations:', error);
-      toast.error('Could not get your location', {
-        description: 'Please enable location access to find nearby spots.',
+      toast.error('Could not get recommendations', {
+        description: 'Please try again.',
       });
       setMessages((prev) => [
         ...prev.slice(0, -1),
-        { text: "I couldn't access your location. Please enable location permissions and try again.", isUser: false },
+        { text: "Sorry, I couldn't get recommendations. Please try again.", isUser: false },
       ]);
       setShowPreferences(true);
     } finally {
