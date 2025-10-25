@@ -2,73 +2,74 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Users, Volume2, Clock, AlertCircle, TrendingUp, Wifi } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface Recommendation {
-  spot: {
-    id: string;
-    name: string;
-    building: string;
-    floor: string;
-  };
-  status: {
-    occupancy_percent: number | null;
-    noise_level: string | null;
-    updated_at: string;
-    source: string;
-    wifi_latency: number | null;
-  } | null;
-  distance: number;
+export type RankedSpot = {
+  id: string;
+  name: string;
+  building?: string;
+  floor?: string;
+  occupancyPercent?: number | null;
+  distanceMeters?: number | null;
+  score: number;
+  reasons: string[];
   warnings: string[];
-  matchReason: string;
-}
+  updatedAt?: string | null;
+  source?: string | null;
+};
 
 interface RecommendationCardProps {
-  recommendation: Recommendation;
+  spot: RankedSpot; // <— changed: accept RankedSpot directly
   rank: number;
 }
 
-export const RecommendationCard = ({ recommendation, rank }: RecommendationCardProps) => {
-  const { spot, status, distance, warnings, matchReason } = recommendation;
+const API = import.meta.env.VITE_API_BASE;
+
+export const RecommendationCard = ({ spot, rank }: RecommendationCardProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [occupancy, setOccupancy] = useState(status?.occupancy_percent || 50);
-  const [noiseLevel, setNoiseLevel] = useState<'Quiet' | 'Medium' | 'Loud' | null>(
-    (status?.noise_level as 'Quiet' | 'Medium' | 'Loud') || null
-  );
+  const [occupancy, setOccupancy] = useState<number>(spot.occupancyPercent ?? 50);
+  const [noiseLevel, setNoiseLevel] = useState<"Quiet" | "Medium" | "Loud" | null>(null);
 
-  const timeSinceUpdate = status
-    ? Math.round((Date.now() - new Date(status.updated_at).getTime()) / 60000)
-    : null;
+  const timeSinceUpdate = useMemo(() => {
+    if (!spot.updatedAt) return null;
+    const ms = Date.now() - new Date(spot.updatedAt).getTime();
+    return Math.max(0, Math.round(ms / 60000));
+  }, [spot.updatedAt]);
 
-  // Convert distance to miles and walking time
-  const distanceMiles = (distance * 0.000621371).toFixed(2); // meters to miles
-  const walkingMinutes = Math.round(distance / 80); // ~80m per minute walking speed
+  const distanceMiles = useMemo(() => {
+    if (spot.distanceMeters == null) return null;
+    return (spot.distanceMeters * 0.000621371).toFixed(2);
+  }, [spot.distanceMeters]);
 
+  const walkingMinutes = useMemo(() => {
+    if (spot.distanceMeters == null) return null;
+    return Math.max(1, Math.round(spot.distanceMeters / 80)); // ~80 m/min
+  }, [spot.distanceMeters]);
+
+  // Optional: post quick update to your Python backend (/api/status)
   const handleSubmitUpdate = async () => {
-    setIsSubmitting(true);
     try {
-      const { error } = await supabase.functions.invoke('submit-status', {
-        body: {
+      setIsSubmitting(true);
+      const res = await fetch(`${API}/api/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           spotId: spot.id,
           occupancyPercent: occupancy,
-          noiseLevel: noiseLevel,
-        },
+          noiseLevel: noiseLevel, // optional
+          source: "user",
+        }),
       });
-
-      if (error) throw error;
-
-      toast.success('Thanks for the update!', {
-        description: 'Your feedback helps other students find the best spots.',
+      if (!res.ok) throw new Error(`Update failed: ${res.status}`);
+      toast.success("Thanks for the update!", {
+        description: "Your feedback helps other students find the best spots.",
       });
-    } catch (error) {
-      console.error('Error submitting update:', error);
-      toast.error('Failed to submit update', {
-        description: 'Please try again.',
-      });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to submit update", { description: "Please try again." });
     } finally {
       setIsSubmitting(false);
     }
@@ -76,6 +77,7 @@ export const RecommendationCard = ({ recommendation, rank }: RecommendationCardP
 
   return (
     <Card className="p-5 space-y-4 hover:shadow-md transition-shadow animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
@@ -85,87 +87,100 @@ export const RecommendationCard = ({ recommendation, rank }: RecommendationCardP
             <h3 className="font-semibold text-base leading-tight">{spot.name}</h3>
           </div>
           <p className="text-sm text-muted-foreground">
-            {spot.building} • {spot.floor}
+            {spot.building ?? "—"}
+            {spot.building && spot.floor ? " • " : ""}
+            {spot.floor ?? ""}
           </p>
         </div>
+        {/* Optional score chip */}
+        <Badge variant="outline" className="text-xs">
+          Score: {spot.score.toFixed(2)}
+        </Badge>
       </div>
 
+      {/* Metrics grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {/* Occupancy */}
         <div className="flex items-center gap-2 text-sm">
-          <div className={`p-1.5 rounded-lg ${status?.occupancy_percent !== null ? 'bg-primary/10' : 'bg-muted'}`}>
+          <div className={`p-1.5 rounded-lg ${spot.occupancyPercent != null ? "bg-primary/10" : "bg-muted"}`}>
             <Users className="w-4 h-4 text-primary" />
           </div>
           <div>
             <div className="font-medium">
-              {status?.occupancy_percent !== null
-                ? `${status.occupancy_percent}% full`
-                : 'Unknown'}
+              {spot.occupancyPercent != null ? `${spot.occupancyPercent}% full` : "Unknown"}
             </div>
             <div className="text-xs text-muted-foreground">Occupancy</div>
           </div>
         </div>
 
+        {/* Noise (optional — Python currently doesn’t return noise match) */}
         <div className="flex items-center gap-2 text-sm">
-          <div className={`p-1.5 rounded-lg ${status?.noise_level ? 'bg-accent/10' : 'bg-muted'}`}>
+          <div className={`p-1.5 rounded-lg bg-muted`}>
             <Volume2 className="w-4 h-4 text-accent" />
           </div>
           <div>
-            <div className="font-medium">{status?.noise_level || 'Unknown'}</div>
+            <div className="font-medium">—</div>
             <div className="text-xs text-muted-foreground">Noise Level</div>
           </div>
         </div>
 
+        {/* Distance */}
         <div className="flex items-center gap-2 text-sm">
           <div className="p-1.5 rounded-lg bg-secondary">
             <MapPin className="w-4 h-4 text-secondary-foreground" />
           </div>
           <div>
-            <div className="font-medium">{distanceMiles} mi • {walkingMinutes} min</div>
+            <div className="font-medium">
+              {distanceMiles != null && walkingMinutes != null
+                ? `${distanceMiles} mi • ${walkingMinutes} min`
+                : "Distance unknown"}
+            </div>
             <div className="text-xs text-muted-foreground">Walking distance</div>
           </div>
         </div>
 
+        {/* Updated */}
         <div className="flex items-center gap-2 text-sm">
           <div className="p-1.5 rounded-lg bg-secondary">
             <Clock className="w-4 h-4 text-secondary-foreground" />
           </div>
           <div>
-            <div className="font-medium">
-              {timeSinceUpdate !== null ? `${timeSinceUpdate}m ago` : 'N/A'}
-            </div>
+            <div className="font-medium">{timeSinceUpdate !== null ? `${timeSinceUpdate}m ago` : "N/A"}</div>
             <div className="text-xs text-muted-foreground">Last updated</div>
           </div>
         </div>
 
+        {/* WiFi placeholder (Python doesn’t return it yet) */}
         <div className="flex items-center gap-2 text-sm">
-          <div className={`p-1.5 rounded-lg ${status?.wifi_latency ? 'bg-green-50 dark:bg-green-950/20' : 'bg-muted'}`}>
+          <div className="p-1.5 rounded-lg bg-muted">
             <Wifi className="w-4 h-4 text-green-600 dark:text-green-500" />
           </div>
           <div>
-            <div className="font-medium">
-              {status?.wifi_latency ? `${status.wifi_latency}ms` : 'Unknown'}
-            </div>
+            <div className="font-medium">Unknown</div>
             <div className="text-xs text-muted-foreground">WiFi Latency</div>
           </div>
         </div>
       </div>
 
-      {warnings.length > 0 && (
+      {/* Warnings */}
+      {spot.warnings?.length > 0 && (
         <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
           <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-amber-800 dark:text-amber-300">
-            {warnings.join(' • ')}
+          <p className="text-xs text-amber-800 dark:text-amber-300">{spot.warnings.join(" • ")}</p>
+        </div>
+      )}
+
+      {/* Why this matched */}
+      {(spot.reasons?.length ?? 0) > 0 && (
+        <div className="flex items-start gap-2 p-3 bg-primary/5 rounded-lg">
+          <TrendingUp className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-primary">
+            <span className="font-medium">Why this matched:</span> {spot.reasons.join(" · ")}
           </p>
         </div>
       )}
 
-      <div className="flex items-start gap-2 p-3 bg-primary/5 rounded-lg">
-        <TrendingUp className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-        <p className="text-xs text-primary">
-          <span className="font-medium">Why this matched:</span> {matchReason}
-        </p>
-      </div>
-
+      {/* Quick update dialog */}
       <Dialog>
         <DialogTrigger asChild>
           <Button variant="outline" size="sm" className="w-full">
@@ -179,19 +194,13 @@ export const RecommendationCard = ({ recommendation, rank }: RecommendationCardP
           <div className="space-y-6 py-4">
             <div className="space-y-3">
               <label className="text-sm font-medium">Occupancy: {occupancy}%</label>
-              <Slider
-                value={[occupancy]}
-                onValueChange={(v) => setOccupancy(v[0])}
-                min={0}
-                max={100}
-                step={5}
-              />
+              <Slider value={[occupancy]} onValueChange={(v) => setOccupancy(v[0])} min={0} max={100} step={5} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Noise Level</label>
+              <label className="text-sm font-medium">Noise Level (optional)</label>
               <div className="flex gap-2">
-                {(['Quiet', 'Medium', 'Loud'] as const).map((level) => (
+                {(["Quiet", "Medium", "Loud"] as const).map((level) => (
                   <Badge
                     key={level}
                     variant={noiseLevel === level ? "default" : "outline"}
@@ -204,12 +213,8 @@ export const RecommendationCard = ({ recommendation, rank }: RecommendationCardP
               </div>
             </div>
 
-            <Button
-              onClick={handleSubmitUpdate}
-              disabled={isSubmitting}
-              className="w-full"
-            >
-              {isSubmitting ? 'Submitting...' : 'Submit Update'}
+            <Button onClick={handleSubmitUpdate} disabled={isSubmitting} className="w-full">
+              {isSubmitting ? "Submitting..." : "Submit Update"}
             </Button>
           </div>
         </DialogContent>
