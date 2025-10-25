@@ -4,7 +4,7 @@ import { PreferenceSelector } from "@/components/PreferenceSelector";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, BookOpen } from "lucide-react";
-import { getRecommendations, type Prefs, type RankedSpot } from "@/lib/recommend";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface Message {
@@ -18,8 +18,6 @@ interface Preferences {
   groupSize: number;
   useLocation: boolean;
   whiteboard: boolean;
-  lat?: number | null;
-  lng?: number | null;
 }
 
 const Index = () => {
@@ -30,7 +28,7 @@ const Index = () => {
     },
   ]);
   const [showPreferences, setShowPreferences] = useState(true);
-  const [recommendations, setRecommendations] = useState<RankedSpot[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -48,8 +46,7 @@ const Index = () => {
     setIsLoading(true);
 
     // Add user message
-    const locationText = prefs.useLocation ? 'Use my location' : 'Location not available';
-    const prefsText = `Duration: ${prefs.duration} min\nGroup Size: ${prefs.groupSize}\nWhiteboard: ${prefs.whiteboard ? 'Yes' : 'No'}\n${locationText}`;
+    const prefsText = `Duration: ${prefs.duration} min\nGroup Size: ${prefs.groupSize}\nWhiteboard: ${prefs.whiteboard ? 'Yes' : 'No'}\nUse my location`;
     setMessages((prev) => [
       ...prev,
       { text: prefsText, isUser: true },
@@ -57,33 +54,49 @@ const Index = () => {
     ]);
 
     try {
-      // Use location from PreferenceSelector if available
-      if (prefs.lat != null && prefs.lng != null) {
-        const location = { lat: prefs.lat, lng: prefs.lng };
+      // Get user location
+      if ('geolocation' in navigator) {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+          });
+        });
+        
+        const location = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
         setUserLocation(location);
-      }
 
-      // Get recommendations
-      const req: Prefs = {
-        duration: prefs.duration,
-        groupSize: prefs.groupSize,
-        lat: prefs.lat ?? undefined,
-        lng: prefs.lng ?? undefined,
-      };
-      const results = await getRecommendations(req, 5);
-      setRecommendations(results);
-      setMessages((prev) => [
-        ...prev.slice(0, -1),
-        { text: `Found ${results.length} great spots near you!`, isUser: false },
-      ]);
+        // Get recommendations
+        const { data, error } = await supabase.functions.invoke('recommend', {
+          body: {
+            duration: prefs.duration,
+            groupSize: prefs.groupSize,
+            lat: location.lat,
+            lng: location.lng,
+          },
+        });
+
+        if (error) throw error;
+
+        setRecommendations(data.recommendations);
+        setMessages((prev) => [
+          ...prev.slice(0, -1),
+          { text: `Found ${data.recommendations.length} great spots near you!`, isUser: false },
+        ]);
+      } else {
+        throw new Error('Geolocation not supported');
+      }
     } catch (error) {
       console.error('Error getting recommendations:', error);
-      toast.error('Could not get recommendations', {
-        description: 'Please try again.',
+      toast.error('Could not get your location', {
+        description: 'Please enable location access to find nearby spots.',
       });
       setMessages((prev) => [
         ...prev.slice(0, -1),
-        { text: "Sorry, I couldn't get recommendations. Please try again.", isUser: false },
+        { text: "I couldn't access your location. Please enable location permissions and try again.", isUser: false },
       ]);
       setShowPreferences(true);
     } finally {
@@ -151,8 +164,8 @@ const Index = () => {
               </div>
               {recommendations.map((rec, index) => (
                 <RecommendationCard
-                  key={rec.id}
-                  spot={rec}
+                  key={rec.spot.id}
+                  recommendation={rec}
                   rank={index + 1}
                 />
               ))}
