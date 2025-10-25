@@ -9,6 +9,8 @@ interface Preferences {
   groupSize: number;
   useLocation: boolean;
   whiteboard: boolean;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 interface PreferenceSelectorProps {
@@ -20,13 +22,55 @@ export const PreferenceSelector = ({ onSubmit }: PreferenceSelectorProps) => {
   const [groupSize, setGroupSize] = useState(1);
   const [whiteboard, setWhiteboard] = useState(false);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [geoMsg, setGeoMsg] = useState<string | null>(null);
+
   const handleSubmit = () => {
-    onSubmit({
-      duration,
-      groupSize,
-      useLocation: true,
-      whiteboard,
-    });
+    setIsSubmitting(true);
+    setGeoMsg(null);
+
+    // Try to get geolocation; if denied/unavailable, fall back to nulls
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          onSubmit({
+            duration,
+            groupSize,
+            useLocation: true,
+            whiteboard,
+            lat,
+            lng,
+          });
+          setIsSubmitting(false);
+        },
+        (_err) => {
+          setGeoMsg("Location permission denied — using distance estimate.");
+          onSubmit({
+            duration,
+            groupSize,
+            useLocation: false,
+            whiteboard,
+            lat: null,
+            lng: null,
+          });
+          setIsSubmitting(false);
+        },
+        { enableHighAccuracy: true, maximumAge: 30000, timeout: 8000 },
+      );
+    } else {
+      setGeoMsg("Geolocation not supported — using distance estimate.");
+      onSubmit({
+        duration,
+        groupSize,
+        useLocation: false,
+        whiteboard,
+        lat: null,
+        lng: null,
+      });
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -84,13 +128,11 @@ export const PreferenceSelector = ({ onSubmit }: PreferenceSelectorProps) => {
         </div>
       </div>
 
-      <Button
-        onClick={handleSubmit}
-        className="w-full gap-2"
-        size="lg"
-      >
+      {geoMsg && <div className="text-xs text-amber-600">{geoMsg}</div>}
+
+      <Button onClick={handleSubmit} className="w-full gap-2" size="lg" disabled={isSubmitting}>
         <MapPin className="w-4 h-4" />
-        Find Spots Near Me
+        {isSubmitting ? "Finding Spots..." : "Find Spots Near Me"}
       </Button>
     </div>
   );
