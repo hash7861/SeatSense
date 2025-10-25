@@ -1,3 +1,9 @@
+// ============================================
+// SeatSense | Interactive Study Spot Assistant
+// --------------------------------------------
+// Provides chat-based interface for students
+// ============================================
+
 import { useState, useEffect, useRef } from "react";
 import { ChatBubble } from "@/components/ChatBubble";
 import { PreferenceSelector } from "@/components/PreferenceSelector";
@@ -7,6 +13,7 @@ import { RotateCcw, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Type definitions
 interface Message {
   text: string;
   isUser: boolean;
@@ -21,9 +28,10 @@ interface Preferences {
 }
 
 const Index = () => {
+  // State variables
   const [messages, setMessages] = useState<Message[]>([
     {
-      text: "Hi! I'm SeatSense\n\nTell me your study needs, and I'll find the best spot nearby on campus.",
+      text: "Hi! I'm SeatSense 👋\n\nTell me your study needs, and I'll find the best spot nearby on campus.",
       isUser: false,
     },
   ]);
@@ -33,6 +41,7 @@ const Index = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Scroll to bottom automatically
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -41,12 +50,15 @@ const Index = () => {
     scrollToBottom();
   }, [messages, recommendations]);
 
+  // Handle preference form submission
   const handlePreferencesSubmit = async (prefs: Preferences) => {
     setShowPreferences(false);
     setIsLoading(true);
 
-    // Add user message
-    const prefsText = `Duration: ${prefs.duration} min\nGroup Size: ${prefs.groupSize}\nWhiteboard: ${prefs.whiteboard ? 'Yes' : 'No'}\nUse my location`;
+    const prefsText = `Duration: ${prefs.duration} min\nGroup Size: ${prefs.groupSize}\nWhiteboard: ${
+      prefs.whiteboard ? "Yes" : "No"
+    }\nUse my location: ${prefs.useLocation ? "Yes" : "No"}`;
+
     setMessages((prev) => [
       ...prev,
       { text: prefsText, isUser: true },
@@ -55,22 +67,22 @@ const Index = () => {
 
     try {
       // Get user location
-      if ('geolocation' in navigator) {
+      if ("geolocation" in navigator && prefs.useLocation) {
         const position = await new Promise<GeolocationPosition>((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
             timeout: 10000,
           });
         });
-        
+
         const location = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         };
         setUserLocation(location);
 
-        // Get recommendations
-        const { data, error } = await supabase.functions.invoke('recommend', {
+        // Invoke backend recommend function
+        const { data, error } = await supabase.functions.invoke("recommend", {
           body: {
             duration: prefs.duration,
             groupSize: prefs.groupSize,
@@ -87,16 +99,19 @@ const Index = () => {
           { text: `Found ${data.recommendations.length} great spots near you!`, isUser: false },
         ]);
       } else {
-        throw new Error('Geolocation not supported');
+        throw new Error("Geolocation not supported or disabled.");
       }
     } catch (error) {
-      console.error('Error getting recommendations:', error);
-      toast.error('Could not get your location', {
-        description: 'Please enable location access to find nearby spots.',
+      console.error("Error getting recommendations:", error);
+      toast.error("Could not get your location", {
+        description: "Please enable location access to find nearby spots.",
       });
       setMessages((prev) => [
         ...prev.slice(0, -1),
-        { text: "I couldn't access your location. Please enable location permissions and try again.", isUser: false },
+        {
+          text: "I couldn't access your location. Please enable location permissions and try again.",
+          isUser: false,
+        },
       ]);
       setShowPreferences(true);
     } finally {
@@ -104,6 +119,7 @@ const Index = () => {
     }
   };
 
+  // Handle retuning (reset)
   const handleRetune = () => {
     setRecommendations([]);
     setShowPreferences(true);
@@ -113,6 +129,7 @@ const Index = () => {
     ]);
   };
 
+  // Render
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -135,17 +152,11 @@ const Index = () => {
         <div className="space-y-6">
           {/* Messages */}
           {messages.map((message, index) => (
-            <ChatBubble
-              key={index}
-              message={message.text}
-              isUser={message.isUser}
-            />
+            <ChatBubble key={index} message={message.text} isUser={message.isUser} />
           ))}
 
           {/* Preference Selector */}
-          {showPreferences && !isLoading && (
-            <PreferenceSelector onSubmit={handlePreferencesSubmit} />
-          )}
+          {showPreferences && !isLoading && <PreferenceSelector onSubmit={handlePreferencesSubmit} />}
 
           {/* Recommendations */}
           {recommendations.length > 0 && (
@@ -172,13 +183,14 @@ const Index = () => {
             </div>
           )}
 
-          {/* Loading State */}
+          {/* Loading Spinner */}
           {isLoading && (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           )}
 
+          {/* Scroll anchor */}
           <div ref={messagesEndRef} />
         </div>
       </main>

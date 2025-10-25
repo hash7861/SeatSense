@@ -1,10 +1,17 @@
-project_id = "wjcyfnjqmauewtlxahiv"
+# =========================================
+# SeatSense Supabase Project Configuration
+# =========================================
+project_id = "seatsense"
 
-[functions.recommend]
-verify_jwt = false
+[functions]
+  [functions.estimate-occupancy]
+    verify_jwt = false
+    import_map = "import_map.json"
 
-[functions.submit-status]
-verify_jwt = false
+  [functions.get-noise-level]
+    verify_jwt = false
+    import_map = "import_map.json"
 
-[functions.estimate-occupancy]
-verify_jwt = false
+  [functions.get-distance]
+    verify_jwt = false
+    import_map = "import_map.json"
