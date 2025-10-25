@@ -1,73 +1,42 @@
-# Welcome to your Lovable project
+# 🪑 SeatSense: Real-Time Study Space Availability App  
 
-## Project info
+> **“No more wandering to find a seat.”**  
+> Built for **HackOHI/O 2025 – Honda Challenge**, SeatSense helps students instantly discover the best on-campus study spots based on live crowd data, noise levels, and walking distance.
 
-**URL**: https://lovable.dev/projects/97711c6b-dfd3-4403-a724-ee8669a8f36c
+---
 
-## How can I edit this code?
+## 🌟 Overview  
 
-There are several ways of editing your application.
+SeatSense is an AI-powered campus assistant that analyzes **occupancy trends**, **noise levels**, and **proximity** to recommend the most optimal study environments.  
+It combines real-time student feedback with Supabase Edge Functions that simulate intelligent predictions — delivering actionable insights right from a friendly chat interface.  
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/97711c6b-dfd3-4403-a724-ee8669a8f36c) and start prompting.
+## 🚀 Key Features  
 
-Changes made via Lovable will be committed automatically to this repo.
+- 🤖 **Chat-Based Study Assistant** – Interactive interface that understands user preferences (duration, group size, whiteboard needs, etc.)  
+- 📊 **Live Occupancy Analytics** – Backend functions estimate how busy each space is using user-submitted updates and AI-style heuristics  
+- 🔊 **Noise-Level Monitoring** – Simulated ambient readings for quiet or busy areas  
+- 🗺️ **Walking-Distance Estimator** – Calculates distance and time from the user’s location to study spots  
+- 💬 **Instant Updates** – Students can “Submit Quick Update” to refresh space status in real time  
+- 🧠 **Proof-of-Concept AI Engine** – Demonstrates how large-language-model logic could infer crowd levels from historical data  
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🧩 Tech Stack  
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+| Layer | Technology | Purpose |
+|-------|-------------|----------|
+| **Frontend** | React + TypeScript + Vite + Tailwind CSS + shadcn/ui | Fast, modern UI with responsive design |
+| **Backend** | Supabase (PostgreSQL + Edge Functions) | Database, authentication, and serverless logic |
+| **Deployment** | Lovable .dev / Vercel | Continuous preview and deployment |
+| **Extras** | Sonner (toast alerts), Lucide React (icons) | User feedback & icons |
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+## 🛠️ Setup & Run Locally  
+
+### 1️⃣ Clone the repository
+```bash
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/97711c6b-dfd3-4403-a724-ee8669a8f36c) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+cd SeatSense
