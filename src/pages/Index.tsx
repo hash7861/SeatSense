@@ -4,7 +4,7 @@ import { PreferenceSelector } from "@/components/PreferenceSelector";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, BookOpen } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { getRecommendations, type Prefs, type RankedSpot } from "@/lib/recommend";
 import { toast } from "sonner";
 
 interface Message {
@@ -28,7 +28,7 @@ const Index = () => {
     },
   ]);
   const [showPreferences, setShowPreferences] = useState(true);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<RankedSpot[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -69,15 +69,19 @@ const Index = () => {
         };
         setUserLocation(location);
 
-        // Get recommendations
-        const { data, error } = await supabase.functions.invoke('recommend', {
-          body: {
-            duration: prefs.duration,
-            groupSize: prefs.groupSize,
-            lat: location.lat,
-            lng: location.lng,
-          },
-        });
+        // Get recommendations (NEW: Python FastAPI)
+         const req: Prefs = {
+         duration: prefs.duration,
+         groupSize: prefs.groupSize,
+         lat: location.lat,
+         lng: location.lng,
+       };
+       const results = await getRecommendations(req, 5); // returns RankedSpot[]
+       setRecommendations(results);
+       setMessages((prev) => [
+         ...prev.slice(0, -1),
+         { text: `Found ${results.length} great spots near you!`, isUser: false },
+       ]);
 
         if (error) throw error;
 
@@ -162,13 +166,13 @@ const Index = () => {
                   Retune
                 </Button>
               </div>
-              {recommendations.map((rec, index) => (
-                <RecommendationCard
-                  key={rec.spot.id}
-                  recommendation={rec}
-                  rank={index + 1}
-                />
-              ))}
+              {{recommendations.map((rec, index) => (
+       <RecommendationCard
+     key={rec.id}
+     spot={rec}
+     rank={index + 1}
+   />
+ ))}
             </div>
           )}
 
