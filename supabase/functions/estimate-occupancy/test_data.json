@@ -1,0 +1,5 @@
+[
+  { "spot": "Thompson Library 2F", "status": "busy", "noise": 4 },
+  { "spot": "18th Ave Library", "status": "moderate", "noise": 3 },
+  { "spot": "Ohio Union 3rd Floor", "status": "empty", "noise": 2 }
+]

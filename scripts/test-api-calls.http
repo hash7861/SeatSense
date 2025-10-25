@@ -1,0 +1,15 @@
+### Test Occupancy Function
+GET https://<your-project-ref>.functions.supabase.co/estimate-occupancy
+Content-Type: application/json
+
+###
+
+### Test Noise Level Function
+GET https://<your-project-ref>.functions.supabase.co/get-noise-level
+Content-Type: application/json
+
+###
+
+### Test Distance Function
+GET https://<your-project-ref>.functions.supabase.co/get-distance?lat=40.0076&lon=-83.0300
+Content-Type: application/json
