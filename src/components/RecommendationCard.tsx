@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Users, Volume2, Clock, AlertCircle, TrendingUp } from "lucide-react";
+import { MapPin, Users, Volume2, Clock, AlertCircle, TrendingUp, Wifi } from "lucide-react";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
@@ -20,6 +20,7 @@ interface Recommendation {
     noise_level: string | null;
     updated_at: string;
     source: string;
+    wifi_latency: number | null;
   } | null;
   distance: number;
   warnings: string[];
@@ -42,6 +43,10 @@ export const RecommendationCard = ({ recommendation, rank }: RecommendationCardP
   const timeSinceUpdate = status
     ? Math.round((Date.now() - new Date(status.updated_at).getTime()) / 60000)
     : null;
+
+  // Convert distance to miles and walking time
+  const distanceMiles = (distance * 0.000621371).toFixed(2); // meters to miles
+  const walkingMinutes = Math.round(distance / 80); // ~80m per minute walking speed
 
   const handleSubmitUpdate = async () => {
     setIsSubmitting(true);
@@ -85,7 +90,7 @@ export const RecommendationCard = ({ recommendation, rank }: RecommendationCardP
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="flex items-center gap-2 text-sm">
           <div className={`p-1.5 rounded-lg ${status?.occupancy_percent !== null ? 'bg-primary/10' : 'bg-muted'}`}>
             <Users className="w-4 h-4 text-primary" />
@@ -115,7 +120,7 @@ export const RecommendationCard = ({ recommendation, rank }: RecommendationCardP
             <MapPin className="w-4 h-4 text-secondary-foreground" />
           </div>
           <div>
-            <div className="font-medium">{Math.round(distance)}m</div>
+            <div className="font-medium">{distanceMiles} mi • {walkingMinutes} min</div>
             <div className="text-xs text-muted-foreground">Walking distance</div>
           </div>
         </div>
@@ -129,6 +134,18 @@ export const RecommendationCard = ({ recommendation, rank }: RecommendationCardP
               {timeSinceUpdate !== null ? `${timeSinceUpdate}m ago` : 'N/A'}
             </div>
             <div className="text-xs text-muted-foreground">Last updated</div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-sm">
+          <div className={`p-1.5 rounded-lg ${status?.wifi_latency ? 'bg-green-50 dark:bg-green-950/20' : 'bg-muted'}`}>
+            <Wifi className="w-4 h-4 text-green-600 dark:text-green-500" />
+          </div>
+          <div>
+            <div className="font-medium">
+              {status?.wifi_latency ? `${status.wifi_latency}ms` : 'Unknown'}
+            </div>
+            <div className="text-xs text-muted-foreground">WiFi Latency</div>
           </div>
         </div>
       </div>

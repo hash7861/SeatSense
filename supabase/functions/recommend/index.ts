@@ -19,6 +19,7 @@ interface SpotStatus {
   noise_level: string | null
   updated_at: string
   source: string
+  wifi_latency: number | null
 }
 
 interface RecommendationRequest {

@@ -22,6 +22,7 @@ export type Database = {
           source: string
           spot_id: string
           updated_at: string
+          wifi_latency: number | null
         }
         Insert: {
           id?: string
@@ -30,6 +31,7 @@ export type Database = {
           source: string
           spot_id: string
           updated_at?: string
+          wifi_latency?: number | null
         }
         Update: {
           id?: string
@@ -38,6 +40,7 @@ export type Database = {
           source?: string
           spot_id?: string
           updated_at?: string
+          wifi_latency?: number | null
         }
         Relationships: [
           {

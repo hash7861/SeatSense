@@ -18,12 +18,13 @@ interface Preferences {
   groupSize: number;
   noise: 'Quiet' | 'Medium' | 'Loud' | null;
   useLocation: boolean;
+  whiteboard: boolean;
 }
 
 const Index = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
-      text: "Hi! I'm SeatSense 📚\n\nTell me your study needs, and I'll find the best spot nearby on campus.",
+      text: "Hi! I'm SeatSense\n\nTell me your study needs, and I'll find the best spot nearby on campus.",
       isUser: false,
     },
   ]);
@@ -46,7 +47,7 @@ const Index = () => {
     setIsLoading(true);
 
     // Add user message
-    const prefsText = `Duration: ${prefs.duration} min\nGroup Size: ${prefs.groupSize}\nNoise: ${prefs.noise || 'Any'}\nUse my location`;
+    const prefsText = `Duration: ${prefs.duration} min\nGroup Size: ${prefs.groupSize}\nNoise: ${prefs.noise || 'Any'}\nWhiteboard: ${prefs.whiteboard ? 'Yes' : 'No'}\nUse my location`;
     setMessages((prev) => [
       ...prev,
       { text: prefsText, isUser: true },
