@@ -1,0 +1,7 @@
+project_id = "wjcyfnjqmauewtlxahiv"
+
+[functions.recommend]
+verify_jwt = false
+
+[functions.submit-status]
+verify_jwt = false

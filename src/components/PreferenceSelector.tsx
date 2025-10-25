@@ -1,0 +1,93 @@
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Users, Volume2, Clock } from "lucide-react";
+import { useState } from "react";
+
+interface Preferences {
+  duration: number;
+  groupSize: number;
+  noise: 'Quiet' | 'Medium' | 'Loud' | null;
+  useLocation: boolean;
+}
+
+interface PreferenceSelectorProps {
+  onSubmit: (prefs: Preferences) => void;
+}
+
+export const PreferenceSelector = ({ onSubmit }: PreferenceSelectorProps) => {
+  const [duration, setDuration] = useState(120);
+  const [groupSize, setGroupSize] = useState(1);
+  const [noise, setNoise] = useState<'Quiet' | 'Medium' | 'Loud' | null>(null);
+
+  const handleSubmit = () => {
+    onSubmit({
+      duration,
+      groupSize,
+      noise,
+      useLocation: true,
+    });
+  };
+
+  return (
+    <div className="space-y-6 p-6 bg-card rounded-2xl border border-border shadow-sm animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Clock className="w-4 h-4 text-primary" />
+          <span>Study Duration: {duration} minutes</span>
+        </div>
+        <Slider
+          value={[duration]}
+          onValueChange={(v) => setDuration(v[0])}
+          min={30}
+          max={480}
+          step={30}
+          className="w-full"
+        />
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Users className="w-4 h-4 text-primary" />
+          <span>Group Size: {groupSize}</span>
+        </div>
+        <Slider
+          value={[groupSize]}
+          onValueChange={(v) => setGroupSize(v[0])}
+          min={1}
+          max={10}
+          step={1}
+          className="w-full"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm font-medium mb-2">
+          <Volume2 className="w-4 h-4 text-primary" />
+          <span>Noise Preference (Optional)</span>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {(['Quiet', 'Medium', 'Loud'] as const).map((level) => (
+            <Badge
+              key={level}
+              variant={noise === level ? "default" : "outline"}
+              className="cursor-pointer px-4 py-2 transition-all"
+              onClick={() => setNoise(noise === level ? null : level)}
+            >
+              {level}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      <Button
+        onClick={handleSubmit}
+        className="w-full gap-2"
+        size="lg"
+      >
+        <MapPin className="w-4 h-4" />
+        Find Spots Near Me
+      </Button>
+    </div>
+  );
+};
