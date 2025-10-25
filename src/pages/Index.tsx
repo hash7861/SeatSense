@@ -69,26 +69,18 @@ const Index = () => {
         };
         setUserLocation(location);
 
-        // Get recommendations (NEW: Python FastAPI)
-         const req: Prefs = {
-         duration: prefs.duration,
-         groupSize: prefs.groupSize,
-         lat: location.lat,
-         lng: location.lng,
-       };
-       const results = await getRecommendations(req, 5); // returns RankedSpot[]
-       setRecommendations(results);
-       setMessages((prev) => [
-         ...prev.slice(0, -1),
-         { text: `Found ${results.length} great spots near you!`, isUser: false },
-       ]);
-
-        if (error) throw error;
-
-        setRecommendations(data.recommendations);
+        // Get recommendations
+        const req: Prefs = {
+          duration: prefs.duration,
+          groupSize: prefs.groupSize,
+          lat: location.lat,
+          lng: location.lng,
+        };
+        const results = await getRecommendations(req, 5);
+        setRecommendations(results);
         setMessages((prev) => [
           ...prev.slice(0, -1),
-          { text: `Found ${data.recommendations.length} great spots near you!`, isUser: false },
+          { text: `Found ${results.length} great spots near you!`, isUser: false },
         ]);
       } else {
         throw new Error('Geolocation not supported');
@@ -166,13 +158,13 @@ const Index = () => {
                   Retune
                 </Button>
               </div>
-              {{recommendations.map((rec, index) => (
-       <RecommendationCard
-     key={rec.id}
-     spot={rec}
-     rank={index + 1}
-   />
- ))}
+              {recommendations.map((rec, index) => (
+                <RecommendationCard
+                  key={rec.id}
+                  spot={rec}
+                  rank={index + 1}
+                />
+              ))}
             </div>
           )}
 

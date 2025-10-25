@@ -8,47 +8,23 @@ import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface Recommendation {
-  spot: {
-    id: string;
-    name: string;
-    building: string;
-    floor: string;
-  };
-  status: {
-    occupancy_percent: number | null;
-    noise_level: string | null;
-    updated_at: string;
-    source: string;
-    wifi_latency: number | null;
-  } | null;
-  distance: number;
-  warnings: string[];
-  matchReason: string;
-}
-
-export type RankedSpot = {
-  /* ...as defined in lib/recommend.ts */
-};
+import type { RankedSpot } from "@/lib/recommend";
 
 interface RecommendationCardProps {
   spot: RankedSpot;
   rank: number;
 }
 
-export const RecommendationCard = ({ recommendation, rank }: RecommendationCardProps) => {
-  const { spot, status, distance, warnings, matchReason } = recommendation;
+export const RecommendationCard = ({ spot, rank }: RecommendationCardProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [occupancy, setOccupancy] = useState(status?.occupancy_percent || 50);
-  const [noiseLevel, setNoiseLevel] = useState<"Quiet" | "Medium" | "Loud" | null>(
-    (status?.noise_level as "Quiet" | "Medium" | "Loud") || null,
-  );
+  const [occupancy, setOccupancy] = useState(spot.occupancyPercent || 50);
+  const [noiseLevel, setNoiseLevel] = useState<"Quiet" | "Medium" | "Loud" | null>(null);
 
-  const timeSinceUpdate = status ? Math.round((Date.now() - new Date(status.updated_at).getTime()) / 60000) : null;
+  const timeSinceUpdate = spot.updatedAt ? Math.round((Date.now() - new Date(spot.updatedAt).getTime()) / 60000) : null;
 
   // Convert distance to miles and walking time
-  const distanceMiles = (distance * 0.000621371).toFixed(2); // meters to miles
-  const walkingMinutes = Math.round(distance / 80); // ~80m per minute walking speed
+  const distanceMiles = spot.distanceMeters ? (spot.distanceMeters * 0.000621371).toFixed(2) : "N/A";
+  const walkingMinutes = spot.distanceMeters ? Math.round(spot.distanceMeters / 80) : null;
 
   const handleSubmitUpdate = async () => {
     setIsSubmitting(true);
@@ -86,32 +62,24 @@ export const RecommendationCard = ({ recommendation, rank }: RecommendationCardP
             </Badge>
             <h3 className="font-semibold text-base leading-tight">{spot.name}</h3>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {spot.building} • {spot.floor}
-          </p>
+          {(spot.building || spot.floor) && (
+            <p className="text-sm text-muted-foreground">
+              {spot.building} {spot.floor && `• ${spot.floor}`}
+            </p>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="flex items-center gap-2 text-sm">
-          <div className={`p-1.5 rounded-lg ${status?.occupancy_percent !== null ? "bg-primary/10" : "bg-muted"}`}>
+          <div className={`p-1.5 rounded-lg ${spot.occupancyPercent !== null && spot.occupancyPercent !== undefined ? "bg-primary/10" : "bg-muted"}`}>
             <Users className="w-4 h-4 text-primary" />
           </div>
           <div>
             <div className="font-medium">
-              {status?.occupancy_percent !== null ? `${status.occupancy_percent}% full` : "Unknown"}
+              {spot.occupancyPercent !== null && spot.occupancyPercent !== undefined ? `${spot.occupancyPercent}% full` : "Unknown"}
             </div>
             <div className="text-xs text-muted-foreground">Occupancy</div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 text-sm">
-          <div className={`p-1.5 rounded-lg ${status?.noise_level ? "bg-accent/10" : "bg-muted"}`}>
-            <Volume2 className="w-4 h-4 text-accent" />
-          </div>
-          <div>
-            <div className="font-medium">{status?.noise_level || "Unknown"}</div>
-            <div className="text-xs text-muted-foreground">Noise Level</div>
           </div>
         </div>
 
@@ -121,7 +89,7 @@ export const RecommendationCard = ({ recommendation, rank }: RecommendationCardP
           </div>
           <div>
             <div className="font-medium">
-              {distanceMiles} mi • {walkingMinutes} min
+              {distanceMiles} mi {walkingMinutes && `• ${walkingMinutes} min`}
             </div>
             <div className="text-xs text-muted-foreground">Walking distance</div>
           </div>
@@ -136,31 +104,23 @@ export const RecommendationCard = ({ recommendation, rank }: RecommendationCardP
             <div className="text-xs text-muted-foreground">Last updated</div>
           </div>
         </div>
-
-        <div className="flex items-center gap-2 text-sm">
-          <div className={`p-1.5 rounded-lg ${status?.wifi_latency ? "bg-green-50 dark:bg-green-950/20" : "bg-muted"}`}>
-            <Wifi className="w-4 h-4 text-green-600 dark:text-green-500" />
-          </div>
-          <div>
-            <div className="font-medium">{status?.wifi_latency ? `${status.wifi_latency}ms` : "Unknown"}</div>
-            <div className="text-xs text-muted-foreground">WiFi Latency</div>
-          </div>
-        </div>
       </div>
 
-      {warnings.length > 0 && (
+      {spot.warnings && spot.warnings.length > 0 && (
         <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
           <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-amber-800 dark:text-amber-300">{warnings.join(" • ")}</p>
+          <p className="text-xs text-amber-800 dark:text-amber-300">{spot.warnings.join(" • ")}</p>
         </div>
       )}
 
-      <div className="flex items-start gap-2 p-3 bg-primary/5 rounded-lg">
-        <TrendingUp className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-        <p className="text-xs text-primary">
-          <span className="font-medium">Why this matched:</span> {matchReason}
-        </p>
-      </div>
+      {spot.reasons && spot.reasons.length > 0 && (
+        <div className="flex items-start gap-2 p-3 bg-primary/5 rounded-lg">
+          <TrendingUp className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-primary">
+            <span className="font-medium">Why this matched:</span> {spot.reasons.join(", ")}
+          </p>
+        </div>
+      )}
 
       <Dialog>
         <DialogTrigger asChild>
